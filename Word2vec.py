@@ -18,7 +18,7 @@ import tensorflow as tf
 def read_data(filename):
     """Extract the first file enclosed in a zip file as a list of words."""
     with open(filename) as data:
-        data = data.read()
+        data = data.read().split(" ")
         return data
 
 
@@ -98,18 +98,15 @@ validation_model = Model(input=[input_target, input_context], output=similarity)
 class SimilarityCallback:
     def run_sim(self):
         for i in range(valid_size):
-            try:
-                valid_word = reverse_dictionary[valid_examples[i]]
-                top_k = 8  # number of nearest neighbors
-                sim = self._get_sim(valid_examples[i])
-                nearest = (-sim).argsort()[1:top_k + 1]
-                log_str = 'Nearest to %s:' % valid_word
-                for k in range(top_k):
-                    close_word = reverse_dictionary[nearest[k]]
-                    log_str = '%s %s,' % (log_str, close_word)
-                print(log_str)
-            except:
-                continue
+            valid_word = reverse_dictionary[valid_examples[i]]
+            top_k = 8  # number of nearest neighbors
+            sim = self._get_sim(valid_examples[i])
+            nearest = (-sim).argsort()[1:top_k + 1]
+            log_str = 'Nearest to %s:' % valid_word
+            for k in range(top_k):
+                close_word = reverse_dictionary[nearest[k]]
+                log_str = '%s %s,' % (log_str, close_word)
+            print(log_str)
 
     @staticmethod
     def _get_sim(valid_word_idx):
