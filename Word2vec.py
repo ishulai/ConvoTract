@@ -59,7 +59,7 @@ window_size = 3
 vector_dim = 300
 epochs = 200000
 
-valid_size = 16     # Random set of words to evaluate similarity on.
+valid_size = 8     # Random set of words to evaluate similarity on.
 valid_window = 100  # Only pick dev samples in the head of the distribution.
 valid_examples = np.random.choice(valid_window, valid_size, replace=False)
 
@@ -132,7 +132,7 @@ for cnt in range(epochs):
     loss = model.train_on_batch([arr_1, arr_2], arr_3)
     if cnt % 100 == 0:
         print("Iteration {}, loss={}".format(cnt, loss))
-    if cnt % 20000 == 0:
+    if cnt % 50000 == 0:
         sim_cb.run_sim()
 
 model.save_weights('./weights.h5')
