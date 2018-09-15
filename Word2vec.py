@@ -93,8 +93,7 @@ model.compile(loss='binary_crossentropy', optimizer='adam')
 
 # create a secondary validation model to run our similarity checks during training
 validation_model = Model(input=[input_target, input_context], output=similarity)
-
-
+print(model.summary())
 class SimilarityCallback:
     def run_sim(self):
         for i in range(valid_size):
