@@ -130,10 +130,10 @@ for cnt in range(epochs):
         arr_1[i,] = word_target[idx]
         arr_2[i,] = word_context[idx]
         arr_3[i,] = labels[idx]
-        loss = model.train_on_batch([arr_1, arr_2], arr_3)
+    loss = model.train_on_batch([arr_1, arr_2], arr_3)
     if cnt % 100 == 0:
         print("Iteration {}, loss={}".format(cnt, loss))
-    if cnt % 50000 == 0:
+    if cnt % 50000 == 0 and not cnt == 0:
         sim_cb.run_sim()
 
 model.save_weights('./weights.h5')
