@@ -121,18 +121,19 @@ class SimilarityCallback:
         return sim
 sim_cb = SimilarityCallback()
 
-arr_1 = np.zeros((1,))
-arr_2 = np.zeros((1,))
-arr_3 = np.zeros((1,))
+arr_1 = np.zeros((16,))
+arr_2 = np.zeros((16,))
+arr_3 = np.zeros((16,))
 for cnt in range(epochs):
-    idx = np.random.randint(0, len(labels)-1)
-    arr_1[0,] = word_target[idx]
-    arr_2[0,] = word_context[idx]
-    arr_3[0,] = labels[idx]
-    loss = model.train_on_batch([arr_1, arr_2], arr_3)
-    if cnt % 100 == 0:
-        print("Iteration {}, loss={}".format(cnt, loss))
-    if cnt % 50000 == 0:
-        sim_cb.run_sim()
+    for i in range(16):
+        idx = np.random.randint(0, len(labels)-1)
+        arr_1[i,] = word_target[idx]
+        arr_2[i,] = word_context[idx]
+        arr_3[i,] = labels[idx]
+        loss = model.train_on_batch([arr_1, arr_2], arr_3)
+        if cnt % 100 == 0:
+            print("Iteration {}, loss={}".format(cnt, loss))
+        if cnt % 50000 == 0:
+            sim_cb.run_sim()
 
 model.save_weights('./weights.h5')
