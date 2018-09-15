@@ -1,5 +1,5 @@
 from keras.models import Model
-from keras.layers import Input, Dense, Reshape, merge
+from keras.layers import Input, Dense, Reshape, dot
 from keras.layers.embeddings import Embedding
 from keras.preprocessing.sequence import skipgrams
 from keras.preprocessing import sequence
@@ -82,16 +82,14 @@ context = embedding(input_context)
 context = Reshape((vector_dim, 1))(context)
 
 # setup a cosine similarity operation which will be output in a secondary model
-similarity = merge([target, context], mode='cos', dot_axes=0)
+similarity = dot([target, context], axes=0, normalize=True)
 
-# now perform the dot product operation to get a similarity measure
-dot_product = merge([target, context], mode='dot', dot_axes=1)
-dot_product = Reshape((1,))(dot_product)
+dot_product = Reshape((1,))(similarity)
 # add the sigmoid output layer
 output = Dense(1, activation='sigmoid')(dot_product)
 # create the primary training model
 model = Model(input=[input_target, input_context], output=output)
-model.compile(loss='binary_crossentropy', optimizer='rmsprop')
+model.compile(loss='binary_crossentropy', optimizer='adam')
 
 # create a secondary validation model to run our similarity checks during training
 validation_model = Model(input=[input_target, input_context], output=similarity)
@@ -100,15 +98,18 @@ validation_model = Model(input=[input_target, input_context], output=similarity)
 class SimilarityCallback:
     def run_sim(self):
         for i in range(valid_size):
-            valid_word = reverse_dictionary[valid_examples[i]]
-            top_k = 8  # number of nearest neighbors
-            sim = self._get_sim(valid_examples[i])
-            nearest = (-sim).argsort()[1:top_k + 1]
-            log_str = 'Nearest to %s:' % valid_word
-            for k in range(top_k):
-                close_word = reverse_dictionary[nearest[k]]
-                log_str = '%s %s,' % (log_str, close_word)
-            print(log_str)
+            try:
+                valid_word = reverse_dictionary[valid_examples[i]]
+                top_k = 8  # number of nearest neighbors
+                sim = self._get_sim(valid_examples[i])
+                nearest = (-sim).argsort()[1:top_k + 1]
+                log_str = 'Nearest to %s:' % valid_word
+                for k in range(top_k):
+                    close_word = reverse_dictionary[nearest[k]]
+                    log_str = '%s %s,' % (log_str, close_word)
+                print(log_str)
+            except:
+                continue
 
     @staticmethod
     def _get_sim(valid_word_idx):
@@ -134,5 +135,5 @@ for cnt in range(epochs):
     loss = model.train_on_batch([arr_1, arr_2], arr_3)
     if cnt % 100 == 0:
         print("Iteration {}, loss={}".format(cnt, loss))
-    if cnt % 10000 == 0:
+    if cnt % 1000 == 0:
         sim_cb.run_sim()
