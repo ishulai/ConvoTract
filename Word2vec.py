@@ -12,26 +12,14 @@ import zipfile
 import numpy as np
 import tensorflow as tf
 
-def maybe_download(filename, url, expected_bytes):
-    """Download a file if not present, and make sure it's the right size."""
-    if not os.path.exists(filename):
-        filename, _ = urllib.urlretrieve(url + filename, filename)
-    statinfo = os.stat(filename)
-    if statinfo.st_size == expected_bytes:
-        print('Found and verified', filename)
-    else:
-        print(statinfo.st_size)
-        raise Exception(
-            'Failed to verify ' + filename + '. Can you get to it with a browser?')
-    return filename
 
 
 # Read the data into a list of strings.
 def read_data(filename):
     """Extract the first file enclosed in a zip file as a list of words."""
-    with zipfile.ZipFile(filename) as f:
-        data = tf.compat.as_str(f.read(f.namelist()[0])).split()
-    return data
+    with open(filename) as data:
+        data = data.read()
+        return data
 
 
 def build_dataset(words, n_words):
@@ -55,8 +43,7 @@ def build_dataset(words, n_words):
     return data, count, dictionary, reversed_dictionary
 
 def collect_data(vocabulary_size=10000):
-    url = 'http://mattmahoney.net/dc/'
-    filename = maybe_download('text8.zip', url, 31344016)
+    filename = "./parsed_lines.txt"
     vocabulary = read_data(filename)
     print(vocabulary[:7])
     data, count, dictionary, reverse_dictionary = build_dataset(vocabulary,
