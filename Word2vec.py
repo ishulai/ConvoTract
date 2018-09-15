@@ -137,3 +137,5 @@ for cnt in range(epochs):
         print("Iteration {}, loss={}".format(cnt, loss))
     if cnt % 1000 == 0:
         sim_cb.run_sim()
+
+model.save_weights('./weights.h5')
