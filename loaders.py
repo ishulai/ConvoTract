@@ -6,8 +6,7 @@ templates = {
 template_lookup = [
     {
         "reference_vectors": [],
-        "reference_text": 0,
-        "names": [],
+        "reference_text": "",
         "supertemplate": "rent"
     }
 ]
