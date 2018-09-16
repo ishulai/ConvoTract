@@ -120,6 +120,12 @@ def infer_word_similarity(reference_vector, given_word):
     return cosine(comp_vector, reference_vector)
 
 
+def get_idx(word):
+    if word in dictionary:
+        return dictionary[word]
+    else:
+        return dictionary['UNK']
+
 def compute_word_vector(given_word):
     """
     Computes the word vector for the given word.
@@ -128,8 +134,8 @@ def compute_word_vector(given_word):
     x_word = np.zeros(shape=(1,))
     x_context = np.zeros(shape=(1,))
 
-    x_word[0] = dictionary[given_word]
-    x_context[0] = dictionary[given_word]
+    x_word[0] = get_idx(given_word)
+    x_context[0] = get_idx(given_word)
     # predict
     vectors = model.predict([x_word, x_context])    
     return [vectors[0][i][0] for i in range(len(vectors[0]))]
@@ -138,13 +144,13 @@ def compute_sentence_vector(words):
     x_word = np.zeros(shape=(len(words),))
     x_context = np.zeros(shape=(len(words),))
     for i, word in enumerate(words):
-        x_word[i] = dictionary[word]
-        x_context[i] = dictionary[word]
+        x_word[i] = get_idx(word)
+        x_context[i] = get_idx(word)
     vectors = model.predict([x_word, x_context])
     vector = np.zeros(shape=(vector_dim,))
     for v in vectors:
         vector = np.add(v, vector)
-    return vector / len(words)
+    return [(vector / len(words))[i][0] for i in range(vector_dim)]
 
 from flask import Flask, request, jsonify
 from loaders import load_template, get_all_sentence_vectors, get_templates

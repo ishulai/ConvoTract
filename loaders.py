@@ -14,6 +14,11 @@ template_lookup = [
     }
 ]
 
+import pickle
+with open('./rent.pkl', 'rb') as rent_pkl:
+    template_lookup = pickle.load(rent_pkl)
+
+
 
 def load_template(template):
     reference_vectors = template_lookup[template].reference_vectors
