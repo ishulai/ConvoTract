@@ -37,7 +37,7 @@ for i, line in enumerate(lease):
     sentence = sentence.split(" ")
     new_obj["sentence_vector"] = compute_sentence_vector(sentence)
 
-    new_obj["reference_vector"] = lease_convo[i]
+    new_obj["reference_vector"] = compute_word_vector(lease_convo[i])
 
     formatted.append(new_obj)
 
