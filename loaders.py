@@ -19,14 +19,12 @@ def load_template(template):
 
 def get_all_sentence_vectors():
     sentence_vectors = []
-    names = []
     supertemplates = []
     for j, template in enumerate(template_lookup):
         for i in range(len(template_lookup[j]['reference_vectors'])):
             sentence_vectors.append(template_lookup[j]["reference_vectors"][i])
-            names.append(template_lookup[j]["names"][i])
             supertemplates.append(template_lookup[j]["supertemplate"])
-    return sentence_vectors, names, supertemplates
+    return sentence_vectors, supertemplates
 
 
 def get_templates(supertemplate):

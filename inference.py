@@ -198,7 +198,7 @@ def classify_sentence(sentence):
     sentence = sentence.split(" ")
 
     # compare to all possible sentence templates
-    vectors, names, supertemplates = get_all_sentence_vectors()
+    vectors, supertemplates = get_all_sentence_vectors()
     
     max_idx = 0
     supertemplate = ""
