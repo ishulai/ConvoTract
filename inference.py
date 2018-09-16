@@ -153,13 +153,17 @@ def fill_out():
     freq_dict = {}
     for item in text:
         sentence_type, supertemplate = classify_sentence(item)
-        if freq_dict[supertemplate]:
+        if supertemplate in freq_dict:
             freq_dict[supertemplate] += 1
         else:
             freq_dict[supertemplate] = 1
         idxes.append(sentence_type)
     sorted_by_value = sorted(freq_dict.items(), key=lambda kv: kv[1]).reverse()
-    supertemplate = sorted_by_value[0][0]
+    if not sorted_by_value:
+        sorted_by_value = [1]
+    supertemplate = sorted_by_value[0]
+    if supertemplate and supertemplate['0']:
+        supertemplate = supertemplate[0]
 
     templates_to_use = get_templates(supertemplate)
     template_idx = 0

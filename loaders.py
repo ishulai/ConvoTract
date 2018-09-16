@@ -1,7 +1,8 @@
+# templates holds the list of template indices for each supertemplate (ie rent)
 templates = {
     "rent": []
 }
-
+# template_lookup holds templates for all sentences
 template_lookup = [
     {
         "reference_vectors": [],
