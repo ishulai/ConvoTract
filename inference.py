@@ -88,38 +88,14 @@ dot_product = Reshape((1,))(similarity)
 output = Dense(1, activation='sigmoid')(dot_product)
 # create the primary training model
 model = Model(input=[input_target, input_context], output=output)
+model.load_weights('./weights.h5')
 model.compile(loss='binary_crossentropy', optimizer='adam')
 
-model.load_weights('./weights.h5')
+new_model = Model(model.inputs, model.layers[-5].output)
+print(new_model.summary())
+new_model.set_weights(model.get_weights())
+model = new_model
 
-for i in range(5):
-    model.layers.pop()
-
-from scipy.spatial.distance import cosine
-
-def infer_sentence_similarity(reference_vector, sentence_words):
-    """
-    reference_vector: the reference sentence vector to compare this sentence to
-    sentence_words: the list of words in the sentence
-    """
-    comp_vector = np.zeros(shape=(vector_dim,))
-    for word in sentence_words:
-        comp_vector = np.add(comp_vector, compute_word_vector(word))
-    comp_vector /= len(sentence_words)
-    return cosine(comp_vector, reference_vector)
-
-
-def infer_word_similarity(reference_vector, given_word):
-    """
-    reference_vector: the vector to compare to
-    given_word: the word to compute cosine similarity to
-    word_contexts: the words within the 3-gram window
-    """
-    # gets the cosine similarity of reference vector to the computed word vector for the given word
-    # where the computed word vector is the average word vector over the 3-gram window as computed
-    # by the model
-    comp_vector = compute_word_vector(given_word)
-    return cosine(comp_vector, reference_vector)
 
 
 def compute_word_vector(given_word):
@@ -134,7 +110,7 @@ def compute_word_vector(given_word):
     x_context[0] = dictionary[given_word]
     # predict
     vectors = model.predict([x_word, x_context])    
-    return avg_vector[0]
+    return [vectors[0][i][0] for i in range(len(vectors[0]))]
 
 
 from flask import Flask, request, jsonify
