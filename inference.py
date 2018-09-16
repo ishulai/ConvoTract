@@ -103,10 +103,7 @@ def infer_sentence_similarity(reference_vector, sentence_words):
     reference_vector: the reference sentence vector to compare this sentence to
     sentence_words: the list of words in the sentence
     """
-    comp_vector = np.zeros(shape=(vector_dim,))
-    for word in sentence_words:
-        comp_vector = np.add(comp_vector, compute_word_vector(word))
-    comp_vector /= len(sentence_words)
+    comp_vector = compute_sentence_vector(sentence_words)
     return cosine(comp_vector, reference_vector)
 
 
@@ -137,6 +134,17 @@ def compute_word_vector(given_word):
     vectors = model.predict([x_word, x_context])    
     return [vectors[0][i][0] for i in range(len(vectors[0]))]
 
+def compute_sentence_vector(words):
+    x_word = np.zeros(shape=(len(words),))
+    x_context = np.zeros(shape=(len(words),))
+    for i, word in enumerate(words):
+        x_word[i] = dictionary[word]
+        x_context[i] = dictionary[word]
+    vectors = model.predict([x_word, x_context])
+    vector = np.zeros(shape=(vector_dim,))
+    for v in vectors:
+        vector = np.add(v, vector)
+    return vector / len(words)
 
 from flask import Flask, request, jsonify
 from loaders import load_template, get_all_sentence_vectors, get_templates
@@ -173,6 +181,7 @@ def fill_out():
     while template_idx < len(templates_to_use):
         # find the template and sentence to use
         for i in range(len(idxes)):
+            # use it to fill out blanks and merge with overall contract text
             if idxes[i] == templates_to_use[template_idx]:
                 response, text = fill_template_blanks(templates_to_use[template_idx], text[i])
                 text = text.split("]")
@@ -227,17 +236,17 @@ def fill_template_blanks(template, speech_sentence):
     speech_sentence = speech_sentence.lower()
     speech_sentence = speech_sentence.split(" ")
 
-    reference_vectors, reference_text = load_template(template)
+    reference_vector, reference_text = load_template(template)
 
     template_responses = []
     # search for most similar in each
     # consecutive similarities are grouped together
-    for i, vector in enumerate(reference_vectors):
+    for i, vector in enumerate(reference_vector):
         # compute word similarity
         last_similarity = 0
         words = []
         for j in range(len(speech_sentence)):
-            similarity = infer_word_similarity(reference_vectors[i], speech_sentence[j])
+            similarity = infer_word_similarity(reference_vector[i], speech_sentence[j])
             if len(words) > 0 and last_similarity > 0.75 and similarity > 0.75:
                 words.append(speech_sentence[j])
             elif len(words) == 0 and similarity > 0.75:
