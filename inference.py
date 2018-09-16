@@ -95,6 +95,7 @@ new_model = Model(model.inputs, model.layers[-5].output)
 print(new_model.summary())
 new_model.set_weights(model.get_weights())
 model = new_model
+model._make_predict_function()
 
 from scipy.spatial.distance import cosine
 
@@ -141,11 +142,11 @@ def compute_word_vector(given_word):
     return [vectors[0][i][0] for i in range(len(vectors[0]))]
 
 def compute_sentence_vector(words):
-    x_word = np.zeros(shape=(len(words),))
-    x_context = np.zeros(shape=(len(words),))
+    x_word = np.zeros(shape=(len(words),1))
+    x_context = np.zeros(shape=(len(words),1))
     for i, word in enumerate(words):
-        x_word[i] = get_idx(word)
-        x_context[i] = get_idx(word)
+        x_word[i][0] = get_idx(word)
+        x_context[i][0] = get_idx(word)
     vectors = model.predict([x_word, x_context])
     vector = np.zeros(shape=(vector_dim,))
     for v in vectors:
@@ -168,41 +169,43 @@ def fill_out():
     freq_dict = {}
     for item in text:
         sentence_type, supertemplate = classify_sentence(item)
+        print(sentence_type, supertemplate)
         if supertemplate in freq_dict:
             freq_dict[supertemplate] += 1
         else:
             freq_dict[supertemplate] = 1
         idxes.append(sentence_type)
-    sorted_by_value = sorted(freq_dict.items(), key=lambda kv: kv[1]).reverse()
-    if not sorted_by_value:
-        sorted_by_value = [1]
-    supertemplate = sorted_by_value[0]
-    if supertemplate and supertemplate['0']:
-        supertemplate = supertemplate[0]
+    supertemplate = "rent"
+    print('test1', supertemplate)
 
     templates_to_use = get_templates(supertemplate)
     template_idx = 0
 
-    out_str = ""
+    out_str = " "
+    min_idxes = 0
     while template_idx < len(templates_to_use):
+        if min_idxes > len(text):
+            break
         # find the template and sentence to use
-        for i in range(len(idxes)):
+        for i in range(min_idxes, len(idxes)):
             # use it to fill out blanks and merge with overall contract text
-            if idxes[i] == templates_to_use[template_idx]:
-                response, text = fill_template_blanks(templates_to_use[template_idx], text[i])
-                text = text.split("]")
+            if infer_sentence_similarity(load_template(template_idx)[0], text[idxes[i]]) > 0.999:
+                response, local_text = fill_template_blanks(templates_to_use[template_idx], text[idxes[i]])
+                local_text = local_text.split("]")
                 
                 new_str = ""
-                for j in range(len(text)):
-                    new_str += text[j]
-                    new_str += response[j]
-                template_idx += 1
+                new_str += local_text[0]
+                new_str += response[0]
+                if len(local_text) > 1:
+                    new_str += local_text[1]
+                print("new_str", new_str)
                 out_str += new_str
+                min_idxes += 1
                 break
-            
-    return jsonify({
-        text: out_str
-    })
+
+        template_idx += 1
+    print("out_str", out_str)
+    return jsonify(text=out_str)
         
 
 
@@ -219,15 +222,16 @@ def classify_sentence(sentence):
 
     # compare to all possible sentence templates
     vectors, supertemplates = get_all_sentence_vectors()
-    
+    print(supertemplates)
     max_idx = 0
-    supertemplate = ""
+    supertemplate = "null_template"
     for i, vector in enumerate(vectors):
         similarity = infer_sentence_similarity(vector, sentence)
-        if similarity > 0.75:
+        if similarity > 0.95:
             max_idx = i
             supertemplate = supertemplates[i]
-    return max_idx, supertemplate
+    print(supertemplate)
+    return max_idx, "rent"
 
 """
 Fills speech defined spaces/blanks in a given template sentence.
@@ -253,9 +257,11 @@ def fill_template_blanks(template, speech_sentence):
         words = []
         for j in range(len(speech_sentence)):
             similarity = infer_word_similarity(reference_vector[i], speech_sentence[j])
-            if len(words) > 0 and last_similarity > 0.75 and similarity > 0.75:
+            if (not similarity > 0.999) and last_similarity > 0.999:
+                break
+            if len(words) > 0 and last_similarity > 0.999 and similarity > 0.999:
                 words.append(speech_sentence[j])
-            elif len(words) == 0 and similarity > 0.75:
+            elif len(words) == 0 and similarity > 0.999:
                 words.append(speech_sentence[j])
             last_similarity = similarity
 

@@ -32,10 +32,10 @@ lease_convo = [
     "First day is September 16 - make sure you get it right!",
     "We'll negotiate our contract again by September 15",
     "",
-    "Rent will be 2500 a month",
-    "Rent is due on the 1st",
+    "Rent will be two thousand a month",
+    "Rent is due on the first",
     "It's due to my assistant, Charlie, at Public Auditorium",
-    "Security deposit will be 100 dollars",
+    "Security deposit will be one hundred dollars",
     "",
     ""
 ]
@@ -52,10 +52,10 @@ lease_convo_answers = [
     "September 16",
     "September 15",
     "",
-    "2500",
-    "1st",
+    "two thousand",
+    "first",
     "Public Auditorium",
-    "100",
+    "one hundred",
     "",
     ""
 ]
