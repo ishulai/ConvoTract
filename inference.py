@@ -90,22 +90,6 @@ output = Dense(1, activation='sigmoid')(dot_product)
 model = Model(input=[input_target, input_context], output=output)
 model.compile(loss='binary_crossentropy', optimizer='adam')
 
-
-arr_1 = np.zeros((16,))
-arr_2 = np.zeros((16,))
-arr_3 = np.zeros((16,))
-for cnt in range(epochs):
-    for i in range(16):
-        idx = np.random.randint(0, len(labels)-1)
-        arr_1[i,] = word_target[idx]
-        arr_2[i,] = word_context[idx]
-        arr_3[i,] = labels[idx]
-    loss = model.train_on_batch([arr_1, arr_2], arr_3)
-    if cnt % 100 == 0:
-        print("Iteration {}, loss={}".format(cnt, loss))
-    if cnt % 50000 == 0 and not cnt == 0:
-        sim_cb.run_sim()
-
 model.load_weights('./weights.h5')
 
 for i in range(5):
@@ -153,31 +137,114 @@ def compute_word_vector(given_word):
     return avg_vector[0]
 
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
+from loaders import load_template, get_all_sentence_vectors, get_templates
 app = Flask(__name__)
+
+@app.route('/fill_out', methods=['POST'])
+def fill_out():
+    json = request.json
+    text = json['text']
+    print("text", text)
+    text = text.split(".")
+
+    # choose a template to use
+    idxes = []
+    freq_dict = {}
+    for item in text:
+        sentence_type, supertemplate = classify_sentence(item)
+        if freq_dict[supertemplate]:
+            freq_dict[supertemplate] += 1
+        else:
+            freq_dict[supertemplate] = 1
+        idxes.append(sentence_type)
+    sorted_by_value = sorted(freq_dict.items(), key=lambda kv: kv[1]).reverse()
+    supertemplate = sorted_by_value[0][0]
+
+    templates_to_use = get_templates(supertemplate)
+    template_idx = 0
+
+    out_str = ""
+    while template_idx < len(templates_to_use):
+        # find the template and sentence to use
+        for i in range(len(idxes)):
+            if idxes[i] == templates_to_use[template_idx]:
+                response, text = fill_template_blanks(templates_to_use[template_idx], text[i])
+                text = text.split("]")
+                
+                new_str = ""
+                for j in range(len(text)):
+                    new_str += text[j]
+                    new_str += response[j]
+                template_idx += 1
+                out_str += new_str
+                break
+            
+    return jsonify({
+        text: out_str
+    })
+        
+
+
 
 """
 Classifies a given sentence given its similarity to pre defined templates.
 """
-@app.route("/classify_sentence", methods=['POST'])
-def classify_sentence():
-    req_data = request.get_json()
-    sentence = req_data['sentence']
+def classify_sentence(sentence):
+    # preprocess sentence
+    import re
+    sentence = re.sub(r'[^\w\s]', '', sentence)
+    sentence = sentence.lower()
+    sentence = sentence.split(" ")
 
-
-    return "Hello World!"
+    # compare to all possible sentence templates
+    vectors, names, supertemplates = get_all_sentence_vectors()
+    
+    max_idx = 0
+    supertemplate = ""
+    for i, vector in enumerate(vectors):
+        similarity = infer_sentence_similarity(vector, sentence)
+        if similarity > 0.75:
+            max_idx = i
+            supertemplate = supertemplates[i]
+    return max_idx, supertemplate
 
 """
 Fills speech defined spaces/blanks in a given template sentence.
+template: template sentence index to match against
+speech_sentence: the speech sentence to match
+return: template_responses; a list of strings, each matching its corresponding blank in the selected template
 """
-@app.route("/fill_template_blanks", methods=['POST'])
-def fill_template_blanks():
-    req_data = request.get_json()
-    # template sentence to match against
-    template = req_data['template']
-    # speech sentence to use for matching
-    speech_sentence = req_data['speech_sentence']
-    
+def fill_template_blanks(template, speech_sentence):
+    # preprocessing
+    import re
+    speech_sentence = re.sub(r'[^\w\s]','',speech_sentence)
+    speech_sentence = speech_sentence.lower()
+    speech_sentence = speech_sentence.split(" ")
+
+    reference_vectors, reference_text = load_template(template)
+
+    template_responses = []
+    # search for most similar in each
+    # consecutive similarities are grouped together
+    for i, vector in enumerate(reference_vectors):
+        # compute word similarity
+        last_similarity = 0
+        words = []
+        for j in range(len(speech_sentence)):
+            similarity = infer_word_similarity(reference_vectors[i], speech_sentence[j])
+            if len(words) > 0 and last_similarity > 0.75 and similarity > 0.75:
+                words.append(speech_sentence[j])
+            elif len(words) == 0 and similarity > 0.75:
+                words.append(speech_sentence[j])
+            last_similarity = similarity
+
+        out_str = ""
+        for word in words:
+            out_str += word
+        template_responses.append(out_str)
+    return template_responses, reference_text
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000) #run app in debug mode on port 5000
